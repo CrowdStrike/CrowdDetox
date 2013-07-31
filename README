@@ -1,0 +1,50 @@
+CrowdStrike CrowdDetox Plugin for Hex-Rays
+
+CrowdDetox version 1.0 Beta
+by Jason Geffner (jason@crowdstrike.com)
+
+The CrowdDetox plugin for Hex-Rays automatically removes junk code and variables from Hex-Rays function decompilations.
+
+
+LICENSE
+
+Please see the LICENSE file for complete licensing details.  
+
+
+BUILD INSTRUCTIONS
+
+This distribution comes with pre-built versions of the plugin for Windows, Mac OS, and Linux (hexrays_CrowdDetox.plw, hexrays_CrowdDetox.pmc, and hexrays_CrowdDetox.plx, respectively). If you would like to use the pre-built plugin, you may skip to INSTALLATION INSTRUCTIONS. Otherwise, follow the steps below to build the CrowdDetox plugin.
+
+1. Install IDA Pro with Hex-Rays (https://www.hex-rays.com)
+2. Download and extract the IDA Pro SDK (https://www.hex-rays.com/products/ida/support/download.shtml)
+3. Install CMake (http://www.cmake.org/cmake/resources/software.html)
+4. Install a C++ compiler
+5. Run CMake on the included CMakeLists.txt file with the following command line arguments: -D IDA_DIR=<path to IDA Pro installation> -D IDA_SDK=<path to IDA Pro SDK>
+
+   For example, if you want to build the CrowdDetox plugin with Visual Studio 11 in Windows, your command line may look as follows:
+   cmake.exe -G "Visual Studio 11" -D CMAKE_MAKE_PROGRAM="C:\Program Files\Microsoft Visual Studio 11.0\Common7\IDE\devenv.exe" -D IDA_DIR="C:\Program Files\IDA 6.4" -D IDA_SDK="C:\idasdk64" CMakeLists.txt
+
+6. Build the solution using a C++ compiler. If using Visual Studio in Windows, open the created CrowdDetox.sln solution and build the CrowdDetox project. In Mac OS or Linux, run make.
+
+
+INSTALLATION INSTRUCTIONS
+
+Copy hexrays_CrowdDetox.plw (for Windows), hexrays_CrowdDetox.pmc (for Mac OS), or hexrays_CrowdDetox.plx (for Linux) to the IDA Pro plugins folder.
+
+
+UNINSTALLATION INSTRUCTIONS
+
+Remove hexrays_CrowdDetox.plw (for Windows), hexrays_CrowdDetox.pmc (for Mac OS), or hexrays_CrowdDetox.plx (for Linux) from the IDA Pro plugins folder.
+
+
+USAGE INSTRUCTIONS
+
+The CrowdDetox plugin runs automatically when using Hex-Rays. When you open the Hex-Rays Pseudocode window for a function (for example, by pressing F5), CrowdDetox will process and adjust the decompiled output before displaying it.
+
+By default, CrowdDetox does not consider values and variables used in return statements to necessarily be legitimate (though these variables may still be marked as legitimate based on their use elsewhere in the function). To have CrowdDetox automatically consider variables used in return statements as legitimate (for example, if you know that the function's return value is used by the caller), you may toggle the option in the Edit/Plugins menubar of IDA Pro. To refresh a Pseudocode window after toggling this option, just press F5 to regenerate the pseudocode.
+
+
+RELEASE NOTES
+
+1.0 Beta
+-- Initial release
