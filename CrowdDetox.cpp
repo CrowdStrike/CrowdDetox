@@ -1,7 +1,7 @@
 /*!
     @file       CrowdDetox.cpp
     @author     Jason Geffner (jason@crowdstrike.com)
-    @brief      CrowdDetox v1.0 Beta
+    @brief      CrowdDetox v1.0.1 Beta
    
     @details    The CrowdDetox plugin for Hex-Rays automatically removes junk
                 code and variables from Hex-Rays function decompilations.
@@ -21,10 +21,6 @@
 #include <hexrays.hpp>
 #pragma warning(pop)
 
-#ifndef _countof
-#define _countof(array) (sizeof(array)/sizeof(array[0]))
-#endif
-
 #define UNUSED(x) (void)(x)
 
 //
@@ -36,18 +32,6 @@ hexdsp_t* hexdsp = NULL;
 // This global flag tracks whether or not this plugin has been initialized
 //
 bool g_fInitialized = false;
-
-//
-// This global flag tracks whether or not variables in return statements
-// should be considered legitimate by default
-//
-bool g_fTaintReturns = false;
-
-//
-// These global variables hold the custom icon indeces for the checkbox icons
-//
-int g_nIconCheckboxUnchecked = 0;
-int g_nIconCheckboxChecked = 0;
 
 /*! 
     @brief Removes junk code and variables from the given function
@@ -463,8 +447,8 @@ Detox (
             //
             // If this item is a legitimate variable and/or a CPPEH_RECORD
             // variable, or a function, global variable, legit macro, goto,
-            // break, or return, then mark the ancestor expressions as
-            // legitimate
+            // break, continue, return, or asm-statement then mark the ancestor
+            // expressions as legitimate
             //
             if (pItem->op == cot_var)
             {
@@ -489,7 +473,9 @@ Detox (
                     IsLegitimateCall((cexpr_t*)pItem)) ||
                 (pItem->op == cit_goto) ||
                 (pItem->op == cit_break) ||
-                (g_fTaintReturns && (pItem->op == cit_return))))
+                (pItem->op == cit_continue) ||
+                (pItem->op == cit_return)) ||
+                (pItem->op == cit_asm))
             {
                 return 0;
             }
@@ -512,7 +498,7 @@ Detox (
                 if ((pCurrentItem->op == cit_expr) ||
                     ((pCurrentItem->op == cot_call) &&
                         IsLegitimateCall((cexpr_t*)pCurrentItem)) ||
-                    (g_fTaintReturns && (pCurrentItem->op == cit_return)))
+                    (pCurrentItem->op == cit_return))
                 {
                     //
                     // This is a cit_expr statement node or cot_call
@@ -788,13 +774,15 @@ Detox (
 
                 //
                 // Don't cleanup cit_break, cit_continue, cit_goto, cit_empty,
-                // or cot_empty items
+                // cot_empty, cit_asm, or cit_return items
                 //
                 if ((pItem->op == cit_break) ||
                     (pItem->op == cit_continue) ||
                     (pItem->op == cit_goto) ||
                     (pItem->op == cit_empty) ||
-                    (pItem->op == cot_empty))
+                    (pItem->op == cot_empty) ||
+                    (pItem->op == cit_asm) ||
+                    (pItem->op == cit_return))
                 {
                     //
                     // Don't cleanup descendants of these items, either
@@ -1032,7 +1020,7 @@ Detox (
 
         //
         // This flag keeps track of whether or not any ctree items were pruned
-        //   during the ctree traversal
+        // during the ctree traversal
         //
         bool fPruned;
 
@@ -1164,95 +1152,12 @@ PLUGIN_init (
         return PLUGIN_SKIP;
     }
 
-    //
-    // Install the Hex-Rays event callback function
-    //
-    if (!install_hexrays_callback(
-        HexRaysEventCallback,
-        NULL))
-    {
-        msg("Failed to install CrowdDetox Hex-Rays callback.\n");
-        return PLUGIN_SKIP;
-    }
-
-    //
-    // Initialize the checkbox icons
-    //
-    unsigned char aucCheckboxUnchecked[194] =
-    {
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF,
-        0x61, 0x00, 0x00, 0x00, 0x89, 0x49, 0x44, 0x41,
-        0x54, 0x78, 0xDA, 0xA5, 0xCC, 0xDD, 0x06, 0x05,
-        0x21, 0x18, 0x85, 0xE1, 0xDD, 0xDD, 0x26, 0x92,
-        0x21, 0x23, 0x91, 0x4A, 0x24, 0x23, 0x92, 0x48,
-        0x77, 0xBB, 0x7F, 0xD8, 0x27, 0xE3, 0x3B, 0x59,
-        0xA3, 0x75, 0xB0, 0xCE, 0xDE, 0x87, 0xBD, 0x36,
-        0xC7, 0x7E, 0x17, 0x42, 0x78, 0x3F, 0x0D, 0xBF,
-        0x0D, 0xBB, 0x01, 0xDE, 0x7B, 0x38, 0x8E, 0x31,
-        0x52, 0xC0, 0x39, 0x07, 0x03, 0x29, 0x25, 0x0A,
-        0x58, 0x6B, 0x61, 0x20, 0xE7, 0x4C, 0x01, 0x63,
-        0x0C, 0x0C, 0x94, 0x52, 0x28, 0x70, 0x9E, 0x27,
-        0x0C, 0x5C, 0xD7, 0x45, 0x01, 0xAD, 0x35, 0x0C,
-        0xD4, 0x5A, 0x29, 0x70, 0x1C, 0x07, 0x0C, 0xB4,
-        0xD6, 0x28, 0xA0, 0x94, 0x82, 0x81, 0xDE, 0x3B,
-        0x05, 0xA4, 0x94, 0x30, 0x30, 0xC6, 0xA0, 0x80,
-        0x10, 0x02, 0x06, 0xE6, 0x9C, 0x14, 0xE0, 0x9C,
-        0xC3, 0xC0, 0x5A, 0x8B, 0x02, 0x70, 0xFD, 0xDF,
-        0x0D, 0xD8, 0xD9, 0x36, 0xF0, 0x01, 0xBD, 0x18,
-        0x55, 0x11, 0x08, 0x25, 0xB1, 0x5F, 0x00, 0x00,
-        0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42,
-        0x60, 0x82 
-    };
-    g_nIconCheckboxUnchecked = load_custom_icon(
-        aucCheckboxUnchecked,
-        sizeof(aucCheckboxUnchecked),
-        "PNG");
-
-    unsigned char aucCheckboxChecked[243] =
-    {
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
-        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0xF3, 0xFF,
-        0x61, 0x00, 0x00, 0x00, 0xBA, 0x49, 0x44, 0x41,
-        0x54, 0x78, 0xDA, 0xA5, 0x92, 0x71, 0x07, 0xC5,
-        0x20, 0x14, 0xC5, 0xDB, 0xB7, 0x4D, 0xCC, 0x8C,
-        0x4C, 0xC6, 0xD4, 0x44, 0x92, 0x98, 0xC4, 0xEC,
-        0xDB, 0xBE, 0xF7, 0xCA, 0xBB, 0x53, 0xEF, 0x7A,
-        0x4F, 0x4F, 0xE7, 0x8F, 0x75, 0x6F, 0xE7, 0x9C,
-        0x1F, 0xB1, 0x81, 0x74, 0x6A, 0x48, 0x1F, 0xA5,
-        0xD4, 0xE3, 0xDF, 0xE2, 0xAB, 0x33, 0x54, 0x00,
-        0x29, 0x65, 0x73, 0x79, 0xDF, 0x77, 0x0C, 0xD8,
-        0xB6, 0xAD, 0x19, 0xA0, 0xB5, 0xC6, 0x80, 0x75,
-        0x5D, 0x7F, 0x96, 0x8C, 0x31, 0x04, 0x32, 0x69,
-        0x46, 0x00, 0x21, 0xC4, 0xD7, 0xB2, 0xB5, 0x36,
-        0x9F, 0x90, 0x49, 0x3B, 0x02, 0x2C, 0xCB, 0x92,
-        0x4D, 0xE7, 0x1C, 0x81, 0x19, 0x76, 0x50, 0x99,
-        0x41, 0x00, 0xCE, 0x79, 0x36, 0xBD, 0xF7, 0xF9,
-        0x4C, 0x3B, 0xCC, 0xB0, 0x83, 0xD2, 0x3D, 0x02,
-        0xCC, 0xF3, 0x9C, 0xCD, 0xE3, 0x38, 0xD0, 0x13,
-        0xC0, 0x03, 0xA5, 0x0C, 0x02, 0x4C, 0xD3, 0x74,
-        0x07, 0x42, 0x08, 0xF7, 0x5C, 0xDE, 0x97, 0x3E,
-        0x02, 0x8C, 0xE3, 0x58, 0x85, 0x62, 0x8C, 0xE4,
-        0xF3, 0xAE, 0xF4, 0x10, 0x80, 0x31, 0xD6, 0xF8,
-        0x17, 0x10, 0x72, 0x9E, 0x27, 0x06, 0x50, 0x4A,
-        0x9B, 0x01, 0xD7, 0x75, 0x61, 0x40, 0x73, 0xFB,
-        0xAD, 0x0A, 0xD0, 0xA3, 0x6E, 0xC0, 0x13, 0xE3,
-        0x11, 0x70, 0x11, 0x4E, 0x0F, 0xD2, 0xE1, 0x00,
-        0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-        0x42, 0x60, 0x82 
-    };
-    g_nIconCheckboxChecked = load_custom_icon(
-        aucCheckboxChecked,
-        sizeof(aucCheckboxChecked),
-        "PNG");
-
-    msg("CrowdDetox plugin loaded. By default, variables used in return "
-        "statements are not automatically considered to be legitimate. This "
-        "option can be toggled in the Edit/Plugins menubar.\n");
+    msg(
+        "CrowdDetox plugin loaded; to detox a function's decompilation, press "
+        "'Shift-F5'.\n"
+        "If a function's return value is not used by its caller, you should "
+        "manually set the function's prototype to specify that it returns "
+        "'void' in order to assist the CrowdDetox plugin.\n");
 
     g_fInitialized = true;
 
@@ -1270,22 +1175,13 @@ PLUGIN_term (
 {
     if (g_fInitialized)
     {
-        remove_hexrays_callback(
-            HexRaysEventCallback,
-            NULL);
-
-        free_custom_icon(g_nIconCheckboxUnchecked);
-        free_custom_icon(g_nIconCheckboxChecked);
-
         term_hexrays_plugin();
     }
 }
 
 /*! 
-    @brief This function runs when a user selects the plugin from the Edit/
-           Plugins menu in IDA
-    @details Toggles g_fTaintReturns and toggles the checkbox for "CrowdDetox:
-             Consider return vars legitimate" in the Edit/Plugins menu
+    @brief This function runs when a user presses Shift-F5
+    @details Runs Detox() on the current function
  
     @param[in] arg Reserved
 */
@@ -1298,16 +1194,31 @@ PLUGIN_run (
     UNUSED(arg);
 
     //
-    // Toggle the g_fTaintReturns global flag
+    // Install the Hex-Rays event callback function
     //
-    g_fTaintReturns = !g_fTaintReturns;
+    if (!install_hexrays_callback(
+        HexRaysEventCallback,
+        NULL))
+    {
+        msg(
+            "Failed to install CrowdDetox Hex-Rays callback.\n");
+        return;
+    }
 
     //
-    // Set the checked/unchecked menu item icon in the plugins menu
+    // Open the Hex-Rays pseudocode window, or refresh the current pseudocode
+    // window if it's already open
     //
-    set_menu_item_icon(
-        "Edit/Plugins/CrowdDetox: Consider return vars legitimate",
-        g_fTaintReturns ? g_nIconCheckboxChecked : g_nIconCheckboxUnchecked);
+    open_pseudocode(
+        get_screen_ea(),
+        0);
+
+    //
+    // Uninstall the Hex-Rays event callback function
+    //
+    remove_hexrays_callback(
+        HexRaysEventCallback,
+        NULL);
 }
 
 plugin_t PLUGIN =
@@ -1317,14 +1228,10 @@ plugin_t PLUGIN =
     PLUGIN_init,                    // Initialization function
     PLUGIN_term,                    // Termination function
     PLUGIN_run,                     // Plugin invocation function
-    "If checked, variables used "   // Long comment about the plugin
-        "in return statements are considered legitimate by default. If "
-        "unchecked, these variables are not automatically marked as "
-        "legitimate.",
+    "",                             // Long comment about the plugin
     "The CrowdDetox plugin "        // Multiline help about the plugin
         "automatically removes junk code and variables from Hex-Rays function "
         "decompilations.",
-    "CrowdDetox: Consider return "  // The preferred short name of the plugin
-        "vars legitimate",
-    ""                              // The preferred hotkey to run the plugin
+    "CrowdDetox",                   // The preferred short name of the plugin
+    "Shift-F5"                      // The preferred hotkey to run the plugin
 };

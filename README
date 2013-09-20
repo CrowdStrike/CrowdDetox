@@ -1,6 +1,6 @@
 CrowdStrike CrowdDetox Plugin for Hex-Rays
 
-CrowdDetox version 1.0 Beta
+CrowdDetox version 1.0.1 Beta
 by Jason Geffner (jason@crowdstrike.com)
 
 The CrowdDetox plugin for Hex-Rays automatically removes junk code and variables from Hex-Rays function decompilations.
@@ -13,7 +13,9 @@ Please see the LICENSE file for complete licensing details.
 
 BUILD INSTRUCTIONS
 
-This distribution comes with pre-built versions of the plugin for Windows, Mac OS, and Linux (hexrays_CrowdDetox.plw, hexrays_CrowdDetox.pmc, and hexrays_CrowdDetox.plx, respectively). If you would like to use the pre-built plugin, you may skip to INSTALLATION INSTRUCTIONS. Otherwise, follow the steps below to build the CrowdDetox plugin.
+Pre-built versions of the plugin for Windows, Mac OS, and Linux (hexrays_CrowdDetox.plw, hexrays_CrowdDetox.pmc, and hexrays_CrowdDetox.plx, respectively) can be downloaded from http://www.crowdstrike.com/community-tools/index.html
+
+If you would like to use the pre-built plugin, you may skip to INSTALLATION INSTRUCTIONS. Otherwise, follow the steps below to build the CrowdDetox plugin.
 
 1. Install IDA Pro with Hex-Rays (https://www.hex-rays.com)
 2. Download and extract the IDA Pro SDK (https://www.hex-rays.com/products/ida/support/download.shtml)
@@ -39,12 +41,16 @@ Remove hexrays_CrowdDetox.plw (for Windows), hexrays_CrowdDetox.pmc (for Mac OS)
 
 USAGE INSTRUCTIONS
 
-The CrowdDetox plugin runs automatically when using Hex-Rays. When you open the Hex-Rays Pseudocode window for a function (for example, by pressing F5), CrowdDetox will process and adjust the decompiled output before displaying it.
+To detox a function's decompilation, press 'Shift-F5'.
 
-By default, CrowdDetox does not consider values and variables used in return statements to necessarily be legitimate (though these variables may still be marked as legitimate based on their use elsewhere in the function). To have CrowdDetox automatically consider variables used in return statements as legitimate (for example, if you know that the function's return value is used by the caller), you may toggle the option in the Edit/Plugins menubar of IDA Pro. To refresh a Pseudocode window after toggling this option, just press F5 to regenerate the pseudocode.
+By default, CrowdDetox considers values and variables used in return statements to be legitimate. Users can manually set a function's prototype to specify a return type of 'void' if the user doesn't want CrowdDetox to consider a function's returned variables to automatically be considered legitimate.
 
 
 RELEASE NOTES
 
+1.0.1 Beta
+-- Detoxing is no longer automatic; users may now press 'Shift-F5' to detox a function's decompilation
+-- Returned variables now always considered legitimate by default; users can manually set a function's prototype to specify a return type of 'void' if the user doesn't want CrowdDetox to consider a function's returned variables to automatically be considered legitimate
+-- Improved handling of 'continue', 'return', and 'asm' statements
 1.0 Beta
 -- Initial release
