@@ -1,7 +1,7 @@
 /*!
     @file       CrowdDetox.cpp
     @author     Jason Geffner (jason@crowdstrike.com)
-    @brief      CrowdDetox v1.0.1 Beta
+    @brief      CrowdDetox v1.0.2 Beta
    
     @details    The CrowdDetox plugin for Hex-Rays automatically removes junk
                 code and variables from Hex-Rays function decompilations.
@@ -20,6 +20,10 @@
 #pragma warning(disable: 4800 4996)
 #include <hexrays.hpp>
 #pragma warning(pop)
+
+#ifndef _countof
+#define _countof(array) (sizeof(array)/sizeof(array[0]))
+#endif
 
 #define UNUSED(x) (void)(x)
 

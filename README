@@ -1,6 +1,6 @@
 CrowdStrike CrowdDetox Plugin for Hex-Rays
 
-CrowdDetox version 1.0.1 Beta
+CrowdDetox version 1.0.2 Beta
 by Jason Geffner (jason@crowdstrike.com)
 
 The CrowdDetox plugin for Hex-Rays automatically removes junk code and variables from Hex-Rays function decompilations.
@@ -48,6 +48,8 @@ By default, CrowdDetox considers values and variables used in return statements 
 
 RELEASE NOTES
 
+1.0.2 Beta
+-- Defined _countof macro
 1.0.1 Beta
 -- Detoxing is no longer automatic; users may now press 'Shift-F5' to detox a function's decompilation
 -- Returned variables now always considered legitimate by default; users can manually set a function's prototype to specify a return type of 'void' if the user doesn't want CrowdDetox to consider a function's returned variables to automatically be considered legitimate
